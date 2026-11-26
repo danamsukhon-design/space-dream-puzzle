@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Space Dream Puzzle</title>
+<meta name="description" content="A jigsaw puzzle made from an illustration by Dana Sukhon. Four levels, from 9 to 36 pieces, on a phone or a computer.">
+<!-- the card LinkedIn and other sites show when this link is shared -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Space Dream Puzzle">
+<meta property="og:description" content="A jigsaw puzzle made from an illustration by Dana Sukhon. Four levels, from 9 to 36 pieces. Can you finish it?">
+<meta property="og:url" content="https://danamsukhon-design.github.io/space-dream-puzzle/">
+<meta property="og:image" content="https://danamsukhon-design.github.io/space-dream-puzzle/preview.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* A jigsaw puzzle of one picture (picture.jpg, next to this file).
+     Drag the pieces onto the board; a piece clicks into place when it is close to where it belongs.
+     To use another picture: replace picture.jpg (a square picture works best). */
+  :root { --night: #1B1445; --night-2: #3A2A7A; --card: rgba(255, 255, 255, .1); --line: rgba(255, 255, 255, .22);
+    --sun: #FFC83D; --pink: #FF7FA8; --mint: #7BD389; --ink: #FFFFFF; --ink-2: #CFC8F2; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { font-family: "Fredoka", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--night);
+    overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+
+  /* top bar */
+  .bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; padding: 10px 16px; background: rgba(15, 10, 50, .55); border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+  .brand b { font-size: 1.35rem; font-weight: 700; letter-spacing: .01em; }
+  .brand b i { font-style: normal; color: var(--sun); }
+  .brand span { font-size: .85rem; color: var(--ink-2); }
+  .levels { display: flex; padding: 4px; border-radius: 999px; background: var(--card); }
+  .levels button { border: 0; background: none; color: var(--ink-2); font: 600 .9rem "Fredoka", system-ui, sans-serif; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+  .levels button small { font-weight: 500; opacity: .75; margin-left: 4px; }
+  .levels button[aria-pressed="true"] { background: var(--sun); color: #2A1B00; }
+  .stats { display: flex; gap: 8px; }
+  .stat { min-width: 74px; padding: 6px 12px; border-radius: 14px; background: var(--card); text-align: center; line-height: 1.1; }
+  .stat b { display: block; font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+  .tools { display: flex; gap: 8px; }
+  .tool { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    font: 600 .9rem "Fredoka", system-ui, sans-serif; cursor: pointer; transition: transform .15s, background-color .2s; }
+  .tool:hover { background: rgba(255, 255, 255, .18); }
+  .tool:active { transform: scale(.95); }
+  .tool svg { width: 18px; height: 18px; flex: none; }
+  .tool[aria-pressed="true"] { background: var(--mint); border-color: var(--mint); color: #08351B; }
+  .tool.icon { width: 40px; padding: 0; justify-content: center; }
+
+  /* the play area */
+  .stage { position: relative; flex: 1; min-height: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  canvas.grabbing { cursor: grabbing; }
+  .loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1.1rem; color: var(--ink-2); }
+
+  /* the win card */
+  .win { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(15, 10, 50, .5); opacity: 0; pointer-events: none; transition: opacity .35s; }
+  .win.on { opacity: 1; pointer-events: auto; }
+  .card { width: min(92vw, 380px); padding: 26px 24px 22px; border-radius: 26px; text-align: center; color: #2A1B55; background: #fff;
+    box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .6); transform: translateY(18px) scale(.94); transition: transform .45s cubic-bezier(.2, 1.3, .4, 1); }
+  .win.on .card { transform: none; }
+  .stars { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+  .stars svg { width: 46px; height: 46px; fill: #E6E1F5; transition: fill .3s, transform .5s cubic-bezier(.2, 1.6, .4, 1); transform: scale(.6); }
+  .stars svg.on { fill: var(--sun); transform: scale(1); }
+  .card h2 { font-size: 1.9rem; font-weight: 700; }
+  .card p { margin: 6px 0 18px; font-size: 1rem; color: #6A5E96; }
+  .card p b { color: #2A1B55; font-variant-numeric: tabular-nums; }
+  .card .row { display: flex; gap: 10px; }
+  .btn { flex: 1; height: 48px; border-radius: 16px; border: 0; font: 700 1rem "Fredoka", system-ui, sans-serif; cursor: pointer; transition: transform .15s; }
+  .btn:active { transform: scale(.96); }
+  .btn.main { background: var(--sun); color: #2A1B00; }
+  .btn.ghost { background: #EFEBFA; color: #2A1B55; }
+  :focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+  @media (max-width: 760px) {
+    .bar { gap: 8px 10px; padding: 8px 10px; }
+    .brand span { display: none; }
+    .brand b { font-size: 1.15rem; }
+    .levels button { padding: 6px 10px; font-size: .82rem; } .levels button small { display: none; }
+    .stat { min-width: 58px; padding: 5px 8px; } .stat b { font-size: .95rem; }
+    .tool { height: 36px; padding: 0 10px; font-size: .82rem; } .tool.icon { width: 36px; } .tool .txt { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .card, .stars svg, .win { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand"><b>Space Dream <i>Puzzle</i></b><span>Art by Dana Sukhon</span></div>
+    <div class="levels" role="group" aria-label="Level">
+      <button data-n="3" aria-pressed="false">Easy<small>9</small></button>
+      <button data-n="4" aria-pressed="true">Medium<small>16</small></button>
+      <button data-n="5" aria-pressed="false">Hard<small>25</small></button>
+      <button data-n="6" aria-pressed="false">Expert<small>36</small></button>
+    </div>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><b id="s-placed">0 / 16</b><span>Pieces</span></div>
+      <div class="stat"><b id="s-time">0:00</b><span>Time</span></div>
+      <div class="stat"><b id="s-moves">0</b><span>Moves</span></div>
+    </div>
+    <div class="tools">
+      <button class="tool" id="b-peek" title="Look at the finished picture">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span class="txt">Picture</span></button>
+      <button class="tool" id="b-ghost" aria-pressed="true" title="Show a faint picture on the board">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.800 1-2.300A7 7 0 0 0 12 2z"/></svg><span class="txt">Hint</span></button>
+      <button class="tool" id="b-shuffle" title="Mix the pieces and start again">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg><span class="txt">Shuffle</span></button>
+      <button class="tool icon" id="b-sound" aria-pressed="true" aria-label="Sound" title="Sound on / off">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path class="waves" d="M15.5 8.5a5 5 0 0 1 0 7M18.500 5.500a9 9 0 0 1 0 13"/></svg></button>
+    </div>
+  </header>
+  <main class="stage">
+    <canvas id="c" aria-label="Jigsaw puzzle. Drag the pieces onto the board."></canvas>
+    <div class="loading" id="loading">Loading the picture…</div>
+    <div class="win" id="win" role="dialog" aria-modal="true" aria-labelledby="win-t">
+      <div class="card">
+        <div class="stars" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="m12 2 3.1 6.300 6.900 1-5 4.900 1.200 6.900L12 17.800 5.800 21.100 7 14.200 2 9.300l6.900-1z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="m12 2 3.1 6.300 6.900 1-5 4.900 1.200 6.900L12 17.800 5.800 21.100 7 14.200 2 9.300l6.900-1z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="m12 2 3.1 6.300 6.900 1-5 4.900 1.200 6.900L12 17.800 5.800 21.100 7 14.200 2 9.300l6.900-1z"/></svg>
+        </div>
+        <h2 id="win-t">Well done!</h2>
+        <p>You finished it in <b id="w-time">0:00</b> with <b id="w-moves">0</b> moves.</p>
+        <div class="row">
+          <button class="btn ghost" id="w-again">Play again</button>
+          <button class="btn main" id="w-next">Next level</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const PICTURE = 'picture.jpg';
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  const $ = (id) => document.getElementById(id);
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- state ---------- */
+  let n = 4;                         // pieces per side
+  let W = 0, H = 0, dpr = 1;         // canvas size in CSS pixels
+  let B = 0, s = 0, board = { x: 0, y: 0 }, tray = { x: 0, y: 0, w: 0, h: 0 };
+  let edgesH = [], edgesV = [], pieces = [], zTop = 1;
+  let drag = null, ghost = true, peekUntil = 0, sound = true;
+  let started = 0, elapsed = 0, moves = 0, done = false, timer = 0;
+  let confetti = [], sparks = [], dirty = true, bg = null;
+  const img = new Image();
+
+  /* ---------- small helpers ---------- */
+  const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const fmt = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  /* ---------- sound (tiny synth, only after a tap) ---------- */
+  let ac = null;
+  const tone = (freq, at, dur, vol = 0.12, type = 'sine') => {
+    if (!sound) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const t = ac.currentTime + at, o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) { /* no audio: play silently */ }
+  };
+  const sfx = {
+    pick: () => tone(520, 0, 0.07, 0.05, 'triangle'),
+    drop: () => tone(300, 0, 0.08, 0.05, 'triangle'),
+    snap: () => { tone(660, 0, 0.09, 0.12); tone(990, 0.06, 0.14, 0.1); },
+    win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.11, 0.3, 0.12, 'triangle')),
+  };
+
+  /* ---------- the jigsaw cut ----------
+     Every inner edge gets one random tab; the two pieces that share it use the same curve,
+     one of them walking it backwards, so they fit exactly. */
+  function cut() {
+    const r = rng(1000 + n * 77), j = () => (r() * 2 - 1) * 0.04;
+    const edge = () => ({ flip: r() < 0.5 ? 1 : -1, a: j(), b: j(), c: j(), d: j(), e: j() });
+    edgesH = []; edgesV = [];
+    for (let i = 0; i <= n; i++) { edgesH[i] = []; edgesV[i] = []; for (let k = 0; k <= n; k++) { edgesH[i][k] = edge(); edgesV[i][k] = edge(); } }
+  }
+  /* ten points along one edge of length len: [along, sideways] */
+  function edgePoints(e, len) {
+    const t = 0.1, L = (v) => v * len, S = (v) => v * len * e.flip;
+    return [[L(0), S(0)], [L(0.2), S(e.a)], [L(0.5 + e.b + e.d), S(-t + e.c)], [L(0.5 - t + e.b), S(t + e.c)],
+      [L(0.5 - 2 * t + e.b - e.d), S(3 * t + e.c)], [L(0.5 + 2 * t + e.b - e.d), S(3 * t + e.c)], [L(0.5 + t + e.b), S(t + e.c)],
+      [L(0.5 + e.b + e.d), S(-t + e.c)], [L(0.8), S(e.e)], [L(1), S(0)]];
+  }
+  function curve(p, pts, back) {
+    const q = back ? pts.slice().reverse() : pts;
+    p.bezierCurveTo(q[1][0], q[1][1], q[2][0], q[2][1], q[3][0], q[3][1]);
+    p.bezierCurveTo(q[4][0], q[4][1], q[5][0], q[5][1], q[6][0], q[6][1]);
+    p.bezierCurveTo(q[7][0], q[7][1], q[8][0], q[8][1], q[9][0], q[9][1]);
+  }
+  /* the outline of piece (r, c) in board pixels (board corner = 0, 0) */
+  function piecePath(r, c) {
+    const p = new Path2D(), x0 = c * s, y0 = r * s;
+    const hEdge = (row, back) => {
+      if (row === 0 || row === n) { p.lineTo(back ? x0 : x0 + s, row * s); return; }
+      curve(p, edgePoints(edgesH[row][c], s).map(([l, w]) => [x0 + l, row * s + w]), back);
+    };
+    const vEdge = (col, back) => {
+      if (col === 0 || col === n) { p.lineTo(col * s, back ? y0 : y0 + s); return; }
+      curve(p, edgePoints(edgesV[r][col], s).map(([l, w]) => [col * s + w, y0 + l]), back);
+    };
+    p.moveTo(x0, y0);
+    hEdge(r, false); vEdge(c + 1, false); hEdge(r + 1, true); vEdge(c, true);
+    p.closePath();
+    return p;
+  }
+  /* each piece is painted once into its own little canvas, then just stamped every frame */
+  function paintPiece(pc) {
+    const m = Math.ceil(s * 0.37), size = Math.ceil(s + 2 * m);
+    const c2 = document.createElement('canvas'); c2.width = c2.height = Math.ceil(size * dpr);
+    const g = c2.getContext('2d'); g.scale(dpr, dpr); g.translate(m - pc.c * s, m - pc.r * s);
+    g.save(); g.clip(pc.path);
+    g.drawImage(img, 0, 0, B, B);
+    g.lineWidth = Math.max(2, s * 0.03);            // a soft bevel: light from the top left
+    g.save(); g.translate(1.2, 1.2); g.strokeStyle = 'rgba(255,255,255,.4)'; g.stroke(pc.path); g.restore();
+    g.save(); g.translate(-1.2, -1.2); g.strokeStyle = 'rgba(20,10,50,.3)'; g.stroke(pc.path); g.restore();
+    g.restore();
+    g.lineWidth = 1; g.strokeStyle = 'rgba(25,15,60,.55)'; g.stroke(pc.path);
+    pc.cv = c2; pc.m = m; pc.size = size;
+  }
+
+  /* ---------- layout ---------- */
+  function layout(keep) {
+    const st = cv.parentElement.getBoundingClientRect();
+    const oldW = W, oldH = H;
+    W = st.width; H = st.height; dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const pad = Math.max(12, Math.min(W, H) * 0.03), wide = W > H * 1.1;
+    if (wide) {                                   // board on the left, loose pieces on the right
+      B = Math.floor(Math.min(H - 2 * pad, (W - 3 * pad) * 0.58));
+      board = { x: pad + Math.max(0, ((W - 3 * pad) * 0.58 - B) / 2), y: (H - B) / 2 };
+      tray = { x: board.x + B + pad, y: pad, w: W - (board.x + B + pad) - pad, h: H - 2 * pad };
+    } else {                                      // board on top, loose pieces below
+      B = Math.floor(Math.min(W - 2 * pad, (H - 3 * pad) * 0.54));
+      board = { x: (W - B) / 2, y: pad };
+      tray = { x: pad, y: board.y + B + pad, w: W - 2 * pad, h: H - (board.y + B + pad) - pad };
+    }
+    s = B / n;
+    pieces.forEach((pc) => {
+      pc.path = piecePath(pc.r, pc.c); pc.tx = board.x + pc.c * s; pc.ty = board.y + pc.r * s;
+      paintPiece(pc);
+      if (pc.placed) { pc.x = pc.tx; pc.y = pc.ty; }
+      else if (keep && oldW) { pc.x = clamp((pc.x / oldW) * W, 0, W - s); pc.y = clamp((pc.y / oldH) * H, 0, H - s); }
+    });
+    paintBackground();
+    dirty = true;
+  }
+  function paintBackground() {
+    bg = document.createElement('canvas'); bg.width = cv.width; bg.height = cv.height;
+    const g = bg.getContext('2d'); g.scale(dpr, dpr);
+    const gr = g.createLinearGradient(0, 0, W * 0.4, H);
+    gr.addColorStop(0, '#1B1445'); gr.addColorStop(0.6, '#2C2068'); gr.addColorStop(1, '#3A2A7A');
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    const r = rng(42);                             // a quiet starry sky
+    for (let i = 0; i < Math.round((W * H) / 5200); i++) {
+      const x = r() * W, y = r() * H, rad = r() * 1.3 + 0.3;
+      g.globalAlpha = 0.25 + r() * 0.5; g.fillStyle = r() < 0.15 ? '#FFC83D' : '#FFFFFF';
+      g.beginPath(); g.arc(x, y, rad, 0, 6.3); g.fill();
+    }
+    g.globalAlpha = 1;
+    // the tray: a soft panel the loose pieces lie on
+    g.fillStyle = 'rgba(255,255,255,.05)'; g.strokeStyle = 'rgba(255,255,255,.14)'; g.lineWidth = 1.5; g.setLineDash([7, 7]);
+    round(g, tray.x, tray.y, tray.w, tray.h, 22); g.fill(); g.stroke(); g.setLineDash([]);
+    // the board frame
+    g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 30; g.shadowOffsetY = 14;
+    g.fillStyle = '#241A5E'; round(g, board.x - 8, board.y - 8, B + 16, B + 16, 18); g.fill(); g.restore();
+    g.fillStyle = '#120C36'; round(g, board.x, board.y, B, B, 10); g.fill();
+  }
+  function round(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+  /* ---------- a new game ---------- */
+  function newGame(size) {
+    n = size; cut();
+    pieces = [];
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) pieces.push({ r, c, x: 0, y: 0, tx: 0, ty: 0, z: 0, placed: false });
+    layout(false);
+    scatter();
+    hadSize = W > 20 && H > 20;
+    started = 0; elapsed = 0; moves = 0; done = false; confetti = []; sparks = [];
+    clearInterval(timer); $('win').classList.remove('on');
+    document.querySelectorAll('.levels button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.n === n));
+    stats(); dirty = true;
+  }
+  /* loose pieces are spread over the tray in mixed-up rows (a little crooked), so they hide each other as little as possible */
+  function scatter() {
+    const r = Math.random, loose = pieces.filter((p) => !p.placed);
+    const spots = loose.map((_, i) => i).sort(() => r() - 0.5);
+    const cols = Math.max(1, Math.min(loose.length, Math.round(tray.w / (s * 0.8)))), rows = Math.ceil(loose.length / cols);
+    const stepX = cols > 1 ? (tray.w - s) / (cols - 1) : 0, stepY = rows > 1 ? (tray.h - s) / (rows - 1) : 0;
+    loose.forEach((p, k) => {
+      const i = spots[k], cx = i % cols, cy = Math.floor(i / cols);
+      p.x = tray.x + (cols > 1 ? cx * stepX : (tray.w - s) / 2) + (r() - 0.5) * s * 0.16;
+      p.y = tray.y + (rows > 1 ? cy * stepY : (tray.h - s) / 2) + (r() - 0.5) * s * 0.16;
+      p.x = clamp(p.x, 0, W - s); p.y = clamp(p.y, 0, H - s);
+    });
+    loose.slice().sort(() => r() - 0.5).forEach((p) => (p.z = ++zTop));
+  }
+  function stats() {
+    const placed = pieces.filter((p) => p.placed).length;
+    $('s-placed').textContent = `${placed} / ${pieces.length}`;
+    $('s-time').textContent = fmt(elapsed); $('s-moves').textContent = moves;
+  }
+
+  /* ---------- drawing ---------- */
+  function draw(now) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(bg, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // the board: a faint picture to help (Hint), and the outline of every piece
+    ctx.save(); round(ctx, board.x, board.y, B, B, 10); ctx.clip();
+    if (ghost) { ctx.globalAlpha = 0.16; ctx.drawImage(img, board.x, board.y, B, B); ctx.globalAlpha = 1; }
+    ctx.translate(board.x, board.y); ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.lineWidth = 1;
+    pieces.forEach((p) => { if (!p.placed) ctx.stroke(p.path); });
+    ctx.restore();
+    const stamp = (p, lift) => {
+      const k = lift ? 1.05 : 1, size = p.size * k, off = p.m * k + (s * (k - 1)) / 2;
+      ctx.drawImage(p.cv, p.x - off, p.y - off, size, size);
+    };
+    pieces.filter((p) => p.placed).forEach((p) => stamp(p));
+    const loose = pieces.filter((p) => !p.placed && (!drag || drag.p !== p)).sort((a, b) => a.z - b.z);
+    ctx.save(); ctx.shadowColor = 'rgba(8,4,30,.45)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+    loose.forEach((p) => stamp(p)); ctx.restore();
+    if (drag) { ctx.save(); ctx.shadowColor = 'rgba(8,4,30,.55)'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 14; stamp(drag.p, true); ctx.restore(); }
+    // looking at the finished picture
+    if (now < peekUntil) {
+      const a = Math.min(1, (peekUntil - now) / 250, 1);
+      ctx.save(); ctx.globalAlpha = a; round(ctx, board.x, board.y, B, B, 10); ctx.clip(); ctx.drawImage(img, board.x, board.y, B, B); ctx.restore();
+      dirty = true;
+    }
+    // little stars where a piece clicked in, and the party at the end
+    sparks = sparks.filter((q) => now - q.t < 600);
+    sparks.forEach((q) => {
+      const k = (now - q.t) / 600;
+      ctx.save(); ctx.globalAlpha = 1 - k; ctx.fillStyle = '#FFC83D';
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * 6.283, d = s * (0.25 + k * 0.55); star(ctx, q.x + Math.cos(a) * d, q.y + Math.sin(a) * d, s * 0.06 * (1 - k * 0.5)); }
+      ctx.restore();
+    });
+    if (sparks.length) dirty = true;
+    if (confetti.length) {
+      confetti.forEach((q) => {
+        q.vy += 0.16; q.x += q.vx; q.y += q.vy; q.a += q.va;
+        ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.a); ctx.fillStyle = q.col; ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); ctx.restore();
+      });
+      confetti = confetti.filter((q) => q.y < H + 30);
+      dirty = true;
+    }
+  }
+  function star(g, x, y, r) { g.beginPath(); for (let i = 0; i < 10; i++) { const a = -1.571 + (i * 3.1416) / 5, d = i % 2 ? r * 0.45 : r; g.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); } g.closePath(); g.fill(); }
+  function loop(now) {
+    // one bad frame (for example while the window has no size yet) must never stop the game
+    try { if (dirty && W > 20 && H > 20 && bg && bg.width) { dirty = false; draw(now); } } catch (err) { console.error(err); }
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- playing ---------- */
+  const point = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  function pieceAt(x, y) {
+    const loose = pieces.filter((p) => !p.placed).sort((a, b) => b.z - a.z);
+    return loose.find((p) => ctx.isPointInPath(p.path, (x - p.x + p.c * s) * 1, (y - p.y + p.r * s) * 1));
+  }
+  cv.addEventListener('pointerdown', (e) => {
+    if (done || e.button) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);            // hit-test in plain board pixels
+    const { x, y } = point(e), p = pieceAt(x, y);
+    if (!p) return;
+    e.preventDefault(); cv.setPointerCapture(e.pointerId);
+    p.z = ++zTop; drag = { p, dx: x - p.x, dy: y - p.y }; cv.classList.add('grabbing');
+    if (!started) { started = performance.now(); timer = setInterval(() => { elapsed = (performance.now() - started) / 1000; stats(); }, 500); }
+    sfx.pick(); dirty = true;
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const { x, y } = point(e);
+    drag.p.x = clamp(x - drag.dx, -s * 0.3, W - s * 0.7); drag.p.y = clamp(y - drag.dy, -s * 0.3, H - s * 0.7);
+    dirty = true;
+  });
+  const drop = () => {
+    if (!drag) return;
+    const p = drag.p; drag = null; cv.classList.remove('grabbing'); moves++;
+    if (Math.abs(p.x - p.tx) < s * 0.3 && Math.abs(p.y - p.ty) < s * 0.3) {
+      p.x = p.tx; p.y = p.ty; p.placed = true;
+      sparks.push({ x: p.tx + s / 2, y: p.ty + s / 2, t: performance.now() }); sfx.snap();
+      if (pieces.every((q) => q.placed)) win();
+    } else sfx.drop();
+    stats(); dirty = true;
+  };
+  cv.addEventListener('pointerup', drop); cv.addEventListener('pointercancel', drop);
+
+  function win() {
+    done = true; clearInterval(timer); elapsed = (performance.now() - started) / 1000;
+    const par = n * n * 5, stars = elapsed <= par ? 3 : elapsed <= par * 2 ? 2 : 1;
+    $('w-time').textContent = fmt(elapsed); $('w-moves').textContent = moves;
+    document.querySelectorAll('.stars svg').forEach((sv, i) => { sv.classList.remove('on'); setTimeout(() => sv.classList.toggle('on', i < stars), 350 + i * 220); });
+    $('w-next').style.display = n >= 6 ? 'none' : '';
+    if (!reduced) {
+      const cols = ['#FFC83D', '#FF7FA8', '#7BD389', '#7CC4FF', '#FFFFFF'];
+      for (let i = 0; i < 160; i++) confetti.push({ x: W / 2 + (Math.random() - 0.5) * W * 0.5, y: -20 - Math.random() * H * 0.3, vx: (Math.random() - 0.5) * 5, vy: Math.random() * 2 + 1,
+        w: 6 + Math.random() * 8, h: 4 + Math.random() * 6, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3, col: cols[i % cols.length] });
+    }
+    sfx.win();
+    setTimeout(() => { $('win').classList.add('on'); $('w-again').focus(); }, 900);
+    dirty = true;
+  }
+
+  /* ---------- buttons ---------- */
+  document.querySelectorAll('.levels button').forEach((b) => b.addEventListener('click', () => newGame(+b.dataset.n)));
+  $('b-shuffle').addEventListener('click', () => newGame(n));
+  $('b-peek').addEventListener('click', () => { peekUntil = performance.now() + 2200; dirty = true; });
+  $('b-ghost').addEventListener('click', (e) => { ghost = !ghost; e.currentTarget.setAttribute('aria-pressed', ghost); dirty = true; });
+  $('b-sound').addEventListener('click', (e) => {
+    sound = !sound; e.currentTarget.setAttribute('aria-pressed', sound);
+    e.currentTarget.querySelector('.waves').style.display = sound ? '' : 'none';
+    try { localStorage.setItem('puzzle-sound', sound ? 'on' : 'off'); } catch (err) { /* private window: nothing to remember */ }
+  });
+  $('w-again').addEventListener('click', () => newGame(n));
+  $('w-next').addEventListener('click', () => newGame(Math.min(6, n + 1)));
+  try { if (localStorage.getItem('puzzle-sound') === 'off') $('b-sound').click(); } catch (err) { /* keep the sound on */ }
+
+  /* whenever the play area changes size (window resized, phone turned, first time it gets a size) lay it out again */
+  let rs = 0, hadSize = false;
+  new ResizeObserver(() => {
+    clearTimeout(rs);
+    rs = setTimeout(() => {
+      if (!img.complete || !img.naturalWidth || !pieces.length) return;
+      const st = cv.parentElement.getBoundingClientRect();
+      if (st.width < 20 || st.height < 20) return;
+      layout(hadSize);
+      if (!hadSize) { scatter(); hadSize = true; }
+    }, 100);
+  }).observe(cv.parentElement);
+
+  /* for checking the end of the game without playing it through: open the page with ?test and call puzzleTest.finish() */
+  if (new URLSearchParams(location.search).has('test')) {
+    window.puzzleTest = { finish: () => { pieces.forEach((p) => { p.placed = true; p.x = p.tx; p.y = p.ty; }); started = started || performance.now() - 42000; win(); stats(); } };
+  }
+
+  /* ---------- start ---------- */
+  img.onload = () => { $('loading').remove(); newGame(4); requestAnimationFrame(loop); };
+  img.onerror = () => { $('loading').textContent = 'The picture (picture.jpg) could not be loaded.'; };
+  img.src = PICTURE;
+})();
+</script>
+</body>
+</html>
